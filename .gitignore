@@ -29,8 +29,10 @@ env/
 # Database (SQLite)
 *.db
 *.sqlite3
+*.sqlite
 data/*.db
 data/*.sqlite3
+data/*.sqlite
 
 # Environment Variables
 .env
