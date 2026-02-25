@@ -1,0 +1,29 @@
+PCL Parts Reservation Tracker — Server System Requirements
+==========================================================
+
+OPERATING SYSTEM
+  Windows Server 2022 (64-bit)
+  Windows 10/11 Pro (64-bit) — for single-machine use
+
+RAM
+  Minimum:     16 GB
+  Recommended: 32 GB
+
+CPU
+  Minimum:     6-Core Processor, 2.5 GHz (Intel Core i5 / AMD Ryzen 5)
+  Recommended: 8-Core Processor, 3.0 GHz (Intel Core i7 / AMD Ryzen 7)
+
+STORAGE
+  Type:        SSD (required)
+  Minimum:     50 GB free space
+
+NETWORK
+  Open Port:   8501 (for browser access across the network)
+
+NOTES
+  - Numbers are sized to comfortably support this application
+    plus additional apps running on the same server.
+  - SSD is required, not optional — the app does frequent
+    database read/write operations and Excel file processing.
+  - Internet access is only needed during initial setup
+    to download Python packages.

@@ -198,19 +198,25 @@ def render_super_admin_dashboard():
         
         if backups:
             for b in backups:
-                # b is a dict: {id, name, created_at, ...}
-                c_name, c_act = st.columns([3, 1])
+                # b is a dict: {id, name, timestamp, file_path, created_by}
+                c_name, c_restore, c_delete = st.columns([3, 1, 0.5])
                 with c_name:
-                    st.text(f"{b['created_by']} - {b['timestamp']}") # timestamp usually string YYYY-MM-DD...
-                with c_act:
+                    st.text(f"{b['created_by']} — {b['timestamp']}")
+                with c_restore:
                     if st.button("Restore", key=f"btn_restore_{b['id']}"):
-                        # Add double confirmation? User said "Are you sure" for ETA. Maybe here too?
-                        # For now, simplistic restore as requested.
-                        # But restore overwrites DB. Danger!
                         success, msg = db.restore_database_backup(b['id'])
                         if success:
                             st.success(msg)
                             time.sleep(2)
+                            st.rerun()
+                        else:
+                            st.error(msg)
+                with c_delete:
+                    if st.button("❌", key=f"btn_del_backup_{b['id']}", help="Delete this backup permanently"):
+                        success, msg = db.delete_database_backup(b['id'])
+                        if success:
+                            st.toast(msg, icon="🗑️")
+                            time.sleep(0.5)
                             st.rerun()
                         else:
                             st.error(msg)

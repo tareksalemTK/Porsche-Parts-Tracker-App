@@ -1497,6 +1497,41 @@ def restore_database_backup(backup_id):
     except Exception as e:
         return False, f"Restore failed: {e}"
 
+def delete_database_backup(backup_id):
+    """
+    Deletes a backup: removes the physical file from disk and the record from the DB table.
+    """
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("SELECT file_path, name FROM database_backups WHERE id = ?", (backup_id,))
+    res = c.fetchone()
+
+    if not res:
+        conn.close()
+        return False, "Backup record not found."
+
+    file_path = Path(res[0])
+    backup_name = res[1]
+
+    # 1. Delete physical file (ignore if already missing)
+    try:
+        if file_path.exists():
+            file_path.unlink()
+    except Exception as e:
+        conn.close()
+        return False, f"Could not delete file: {e}"
+
+    # 2. Remove DB record
+    try:
+        c.execute("DELETE FROM database_backups WHERE id = ?", (backup_id,))
+        conn.commit()
+    except Exception as e:
+        conn.close()
+        return False, f"Could not remove DB record: {e}"
+
+    conn.close()
+    return True, f"Backup '{backup_name}' deleted successfully."
+
 def create_backup(user_name):
     return create_database_backup(user_name)
 
