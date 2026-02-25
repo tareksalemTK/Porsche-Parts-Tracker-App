@@ -35,36 +35,9 @@ def init_db():
         )
     ''')
 
-    # SCHEMA MIGRATION: Ensure 'email' exists
-    try:
-        c.execute("SELECT email FROM users LIMIT 1")
-    except Exception:
-        print("Migrating schema: Adding email to users")
-        c.execute("ALTER TABLE users ADD COLUMN email TEXT")
-        
-    # SCHEMA MIGRATION: Ensure 'last_reminder_sent' exists in parts
-    try:
-        c.execute("SELECT last_reminder_sent FROM parts LIMIT 1")
-    except Exception:
-        print("Migrating schema: Adding last_reminder_sent to parts")
-        c.execute("ALTER TABLE parts ADD COLUMN last_reminder_sent TIMESTAMP")
-
-    # SCHEMA MIGRATION: Ensure 'custom_stock_date' exists in parts
-    try:
-        c.execute("SELECT custom_stock_date FROM parts LIMIT 1")
-    except Exception:
-        print("Migrating schema: Adding custom_stock_date to parts")
-        c.execute("ALTER TABLE parts ADD COLUMN custom_stock_date TIMESTAMP")
-        
-    # SCHEMA MIGRATION: Ensure 'back_order_original_date' exists in parts
-    try:
-        c.execute("SELECT back_order_original_date FROM parts LIMIT 1")
-    except Exception:
-        print("Migrating schema: Adding back_order_original_date to parts")
-        c.execute("ALTER TABLE parts ADD COLUMN back_order_original_date TIMESTAMP")
-    
     # --- Parts Table ---
     # 16 Columns + Internal flags + Reminder Tracking
+    # MUST be created BEFORE the migration checks below
     c.execute('''
         CREATE TABLE IF NOT EXISTS parts (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -92,9 +65,39 @@ def init_db():
             posted_at TIMESTAMP,        -- Time of archiving
             shipment_ref TEXT,          -- Filename for In Transit batches
             next_info TEXT,             -- From Back Order report
-            last_reminder_sent TIMESTAMP -- Time of last stale stock warning
+            last_reminder_sent TIMESTAMP, -- Time of last stale stock warning
+            custom_stock_date TIMESTAMP,  -- Manual stock date override
+            back_order_original_date TIMESTAMP -- Manual back order date override
         )
     ''')
+
+    # SCHEMA MIGRATION: Ensure 'email' exists in users
+    try:
+        c.execute("SELECT email FROM users LIMIT 1")
+    except Exception:
+        print("Migrating schema: Adding email to users")
+        c.execute("ALTER TABLE users ADD COLUMN email TEXT")
+
+    # SCHEMA MIGRATION: Ensure 'last_reminder_sent' exists in parts
+    try:
+        c.execute("SELECT last_reminder_sent FROM parts LIMIT 1")
+    except Exception:
+        print("Migrating schema: Adding last_reminder_sent to parts")
+        c.execute("ALTER TABLE parts ADD COLUMN last_reminder_sent TIMESTAMP")
+
+    # SCHEMA MIGRATION: Ensure 'custom_stock_date' exists in parts
+    try:
+        c.execute("SELECT custom_stock_date FROM parts LIMIT 1")
+    except Exception:
+        print("Migrating schema: Adding custom_stock_date to parts")
+        c.execute("ALTER TABLE parts ADD COLUMN custom_stock_date TIMESTAMP")
+        
+    # SCHEMA MIGRATION: Ensure 'back_order_original_date' exists in parts
+    try:
+        c.execute("SELECT back_order_original_date FROM parts LIMIT 1")
+    except Exception:
+        print("Migrating schema: Adding back_order_original_date to parts")
+        c.execute("ALTER TABLE parts ADD COLUMN back_order_original_date TIMESTAMP")
     
     # Check for default admin
     c.execute('SELECT * FROM users WHERE username = ?', ('admin',))
