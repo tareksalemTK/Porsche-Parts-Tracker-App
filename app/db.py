@@ -6,6 +6,7 @@ from datetime import datetime
 import re
 import utils # Added import
 from pathlib import Path
+import streamlit as st
 
 import config
 
@@ -618,6 +619,7 @@ def insert_part_record(data, source_type):
     
     return [notif_data]
 
+@st.cache_data(ttl=5, show_spinner=False)
 def get_parts_view(user_type, service_advisor_code=None):
     conn = get_connection()
     
