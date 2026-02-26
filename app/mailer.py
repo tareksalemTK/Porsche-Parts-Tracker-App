@@ -9,10 +9,10 @@ import config
 # --- Configuration ---
 # Use environment variables for security in production.
 # For local dev/testing, you might set defaults or use a .env file loader (python-dotenv).
-SMTP_SERVER = os.environ.get("SMTP_SERVER", "smtp.gmail.com")
+SMTP_SERVER = os.environ.get("SMTP_SERVER", "smtp.office365.com")
 SMTP_PORT = int(os.environ.get("SMTP_PORT", 587))
-SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "warehouse.notifications@example.com")
-SENDER_PASSWORD = os.environ.get("SENDER_PASSWORD", "your_password_here")
+SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "tmaher@porscheleb.com")
+SENDER_PASSWORD = os.environ.get("SENDER_PASSWORD", "tottlf00722")
 
 # Dummy mapping for MVPs
 ADVISOR_EMAILS = {

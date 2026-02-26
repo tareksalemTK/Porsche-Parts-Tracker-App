@@ -328,7 +328,7 @@ def delete_user_by_username(username):
     conn.commit()
     conn.close()
 
-def update_user(username, user_type, service_advisor_code, email, new_password=None):
+def update_user(current_username, new_username, user_type, service_advisor_code, email, new_password=None):
     """
     Updates a user's type, advisor code, email, and optionally their password.
     Password is only changed if new_password is provided (non-empty).
@@ -346,15 +346,15 @@ def update_user(username, user_type, service_advisor_code, email, new_password=N
             hashed = bcrypt.hashpw(new_password.encode('utf-8'), salt)
             c.execute('''
                 UPDATE users
-                SET user_type = ?, service_advisor_code = ?, email = ?, password_hash = ?
+                SET username = ?, user_type = ?, service_advisor_code = ?, email = ?, password_hash = ?
                 WHERE username = ?
-            ''', (user_type, service_advisor_code, email, hashed, username))
+            ''', (new_username, user_type, service_advisor_code, email, hashed, current_username))
         else:
             c.execute('''
                 UPDATE users
-                SET user_type = ?, service_advisor_code = ?, email = ?
+                SET username = ?, user_type = ?, service_advisor_code = ?, email = ?
                 WHERE username = ?
-            ''', (user_type, service_advisor_code, email, username))
+            ''', (new_username, user_type, service_advisor_code, email, current_username))
         conn.commit()
         conn.close()
         return True

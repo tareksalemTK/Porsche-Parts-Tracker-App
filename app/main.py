@@ -693,6 +693,7 @@ def admin_user_management():
             current_code = conn_row.get('service_advisor_code', 'None') or 'None'
 
             with st.form("edit_user_form"):
+                e_name = st.text_input("Username", value=conn_row.get('username') or '')
                 e_types = st.multiselect(
                     "User Type",
                     ["A", "Read Only", "ServiceADV", "PRTADV", "SaMnagment", "OTC", "admin", "super_admin"],
@@ -710,17 +711,18 @@ def admin_user_management():
                 if st.form_submit_button("💾 Save Changes"):
                     success = db.update_user(
                         edit_user,
+                        e_name,
                         e_types,
                         e_code,
                         e_email,
                         new_password=e_pass if e_pass else None
                     )
                     if success:
-                        st.success(f"✅ User '{edit_user}' updated successfully.")
+                        st.success(f"✅ User updated successfully. (Was: {edit_user}, Now: {e_name})")
                         time.sleep(0.5)
                         st.rerun()
                     else:
-                        st.error("Failed to update user.")
+                        st.error("Failed to update user. Does this username already exist?")
 
     with st.expander("Delete User"):
         del_user = st.selectbox("Select User", users['username'])
