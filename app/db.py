@@ -10,7 +10,10 @@ from pathlib import Path
 import config
 
 def get_connection():
-    return sqlite3.connect(config.DB_PATH)
+    conn = sqlite3.connect(config.DB_PATH, timeout=20.0) # 20 second timeout for lock waiting
+    conn.execute('PRAGMA journal_mode=WAL;') # Enable Write-Ahead Logging for concurrency
+    conn.execute('PRAGMA synchronous=NORMAL;')
+    return conn
 
 def init_db():
     """
@@ -98,6 +101,16 @@ def init_db():
     except Exception:
         print("Migrating schema: Adding back_order_original_date to parts")
         c.execute("ALTER TABLE parts ADD COLUMN back_order_original_date TIMESTAMP")
+
+    # SCHEMA MIGRATION: Ensure 'received_date' exists in parts
+    try:
+        c.execute("SELECT received_date FROM parts LIMIT 1")
+    except Exception:
+        print("Migrating schema: Adding received_date to parts")
+        c.execute("ALTER TABLE parts ADD COLUMN received_date TIMESTAMP")
+        # Backfill existing received dates by copying from last_updated 
+        # (It's an approximation, but prevents the app from breaking or needing regex)
+        c.execute("UPDATE parts SET received_date = last_updated WHERE item_status IN ('Received', 'Partially Received')")
     
     # Check for default admin
     c.execute('SELECT * FROM users WHERE username = ?', ('admin',))
@@ -1059,6 +1072,7 @@ def receive_shipment_items(records, user_name):
                 SET received_qty = ?, 
                     item_status = ?,
                     updates_log = updates_log || ?,
+                    received_date = CURRENT_TIMESTAMP,
                     last_updated = CURRENT_TIMESTAMP
                 WHERE id = ?
             ''', (new_total_received, new_status, log_entry, p_id))

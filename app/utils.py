@@ -291,67 +291,64 @@ def parse_log_to_df(log_text):
         
     return pd.DataFrame(data)
 
-def get_aging_text(log_text, status, custom_stock_date=None, back_order_date=None):
+def get_aging_text(log_text, status, custom_stock_date=None, back_order_date=None, received_date=None):
     """
     Returns formatted aging string based on status.
     - Received: Days since 'Received Stock', or custom_stock_date if provided -> "IS X days"
     - Back Order: Days since 'Uploaded (Source: BackOrder)' or back_order_date if provided -> "B.O. X days"
     """
-    if not log_text and not custom_stock_date and not back_order_date:
+    if not log_text and not custom_stock_date and not back_order_date and not received_date:
         return ""
         
-    if not log_text and not custom_stock_date and not back_order_date:
-        return ""
-        
-    # debug print
-    # print(f"DEBUG AGING: status={status}, bo_date={back_order_date}, type={type(back_order_date)}")
-
     try:
         now = datetime.now()
         
         if status in ['Received', 'Partially Received']:
-            # Priority: Custom Date > Log Entry
+            # Priority 1: Custom Date
             if custom_stock_date:
                 start_date = None
                 try:
-                    # Handle string
                     if isinstance(custom_stock_date, str):
                         start_date = datetime.strptime(custom_stock_date.split()[0], '%Y-%m-%d')
-                    # Handle datetime/timestamp (has .date())
                     elif hasattr(custom_stock_date, 'date'):
-                        # Normalize to datetime at midnight
                         d = custom_stock_date
                         if isinstance(d, datetime):
                             start_date = d
                         else:
-                            # e.g. pd.Timestamp or datetime.date
                             start_date = datetime(d.year, d.month, d.day)
                 except:
-                    start_date = now # Fallback
-                
+                    start_date = now
                 if start_date:    
                     days = (now - start_date).days
-                    return f"IS {max(0, days)} days" if days >= 0 else "IS 0 days"
+                    return f"IS {max(0, days)} days"
+            
+            # Priority 2: Precise DB Timestamp (NEW OPTIMIZATION)
+            if received_date:
+                try:
+                    if isinstance(received_date, str):
+                        # Might look like '2026-02-26 09:50:00'
+                        clean_str_date = received_date.split(' ')[0]
+                        start_date = datetime.strptime(clean_str_date, '%Y-%m-%d')
+                    elif hasattr(received_date, 'date'):
+                        start_date = received_date
+                    else:
+                        start_date = None
+                        
+                    if start_date:
+                        days = (now - start_date).days
+                        return f"IS {max(0, days)} days"
+                except Exception as e:
+                    pass
 
-            # Find latest receipt date
-            # Broaden regex to catch "Received Stock" AND "Received +..."
-            # For Partially Received, it might be "Partially Received" in log? 
-            # Often log says "Received Stock (Partial)"
-            # Let's search for "Received" generally in log.
-            # We want the date of the receipt event.
-            # Regex: Find date followed by time (optional) then user then "Received"
-            # Or simpler: Find ANY [YYYY-MM-DD ...] line that contains "Received"
+            # Priority 3 (Fallback): Slow Regex parsing
+            if log_text:
+                matches = re.findall(r'\[(\d{4}-\d{2}-\d{2}).*?\].*?eceived', log_text)
+                if matches:
+                     last_date = datetime.strptime(matches[-1], '%Y-%m-%d')
+                     days = (now - last_date).days
+                     return f"IS {max(0, days)} days"
             
-            # Extract all timestamps from lines containing "Received" or "received" (case insensitive?)
-            # Usually Log: [2026-02-18 14:30] Admin: Received Stock
-            # Matches: '2026-02-18'
-            matches = re.findall(r'\[(\d{4}-\d{2}-\d{2}).*?\].*?eceived', log_text)
-            
-            if matches:
-                 # matches[-1] is the captured group: the date string
-                 last_date = datetime.strptime(matches[-1], '%Y-%m-%d')
-                 days = (now - last_date).days
-                 return f"IS {max(0, days)} days" if days >= 0 else "IS 0 days"
+            return "IS 0 days"
         
         elif status == 'Back Order':
             # Priority: Custom Back Order Date > Log Entry

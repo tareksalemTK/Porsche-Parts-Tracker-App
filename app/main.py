@@ -771,7 +771,8 @@ def admin_ledger_section():
                     row.get('updates_log'), 
                     row.get('item_status'), 
                     row.get('custom_stock_date'),
-                    row.get('back_order_original_date')
+                    row.get('back_order_original_date'),
+                    row.get('received_date')
                 )
                 
                 # Base Item Metadata
