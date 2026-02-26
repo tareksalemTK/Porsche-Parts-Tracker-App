@@ -659,17 +659,17 @@ def admin_user_management():
             u_name = st.text_input("Username")
             u_pass = st.text_input("Password", type="password")
             # Multi-select for User Type - Renamed SADV to PRTADV
-            u_types = st.multiselect("User Type", ["A", "AA", "B", "PRTADV", "EMB", "OTC", "admin"])
+            u_types = st.multiselect("User Type", ["A", "Read Only", "ServiceADV", "PRTADV", "SaMnagment", "OTC", "admin"])
             
             # Email (New)
             u_email = st.text_input("Email Address (for notifications)")
             
-            # Show Advisor Code only for Type B? Or all can have it?
-            u_code = st.selectbox("Service Advisor Code (for Type B)", ["EMA GilbetZ", "EMB TonyR", "EMC JackS", "B&P", "OTC", "ALL", "None"], index=6)
+            # Show Advisor Code only for Type ServiceADV? Or all can have it?
+            u_code = st.selectbox("Service Advisor Code (for Type ServiceADV)", ["EMA GilbetZ", "EMB TonyR", "EMC JackS", "B&P", "OTC", "ALL", "None"], index=6)
             
             if st.form_submit_button("Create User"):
-                if 'B' in u_types and u_code == 'None':
-                    st.error("Type B must have an Advisor Code.")
+                if 'ServiceADV' in u_types and u_code == 'None':
+                    st.error("Type ServiceADV must have an Advisor Code.")
                 else:
                     # u_types passed as list to db.create_user (which now handles it)
                     if db.create_user(u_name, u_pass, u_types, u_code, u_email):
@@ -681,13 +681,54 @@ def admin_user_management():
     users = db.get_all_users()
     users = add_filters(users, key_suffix='users') # Add Filter
     st.dataframe(users)
-    
+
+    with st.expander("✏️ Edit User"):
+        all_users_df = db.get_all_users()
+        edit_user = st.selectbox("Select User to Edit", all_users_df['username'], key="edit_user_select")
+
+        if edit_user:
+            # Fetch current values for pre-fill
+            conn_row = all_users_df[all_users_df['username'] == edit_user].iloc[0]
+            current_types = [t.strip() for t in str(conn_row.get('user_type', '')).split(',') if t.strip()]
+            current_code = conn_row.get('service_advisor_code', 'None') or 'None'
+
+            with st.form("edit_user_form"):
+                e_types = st.multiselect(
+                    "User Type",
+                    ["A", "Read Only", "ServiceADV", "PRTADV", "SaMnagment", "OTC", "admin", "super_admin"],
+                    default=[t for t in current_types if t in ["A", "Read Only", "ServiceADV", "PRTADV", "SaMnagment", "OTC", "admin", "super_admin"]]
+                )
+                advisor_options = ["EMA GilbetZ", "EMB TonyR", "EMC JackS", "B&P", "OTC", "ALL", "None"]
+                e_code = st.selectbox(
+                    "Service Advisor Code",
+                    advisor_options,
+                    index=advisor_options.index(current_code) if current_code in advisor_options else len(advisor_options) - 1
+                )
+                e_email = st.text_input("Email Address", value=conn_row.get('email') or '')
+                e_pass = st.text_input("New Password (leave blank to keep current)", type="password")
+
+                if st.form_submit_button("💾 Save Changes"):
+                    success = db.update_user(
+                        edit_user,
+                        e_types,
+                        e_code,
+                        e_email,
+                        new_password=e_pass if e_pass else None
+                    )
+                    if success:
+                        st.success(f"✅ User '{edit_user}' updated successfully.")
+                        time.sleep(0.5)
+                        st.rerun()
+                    else:
+                        st.error("Failed to update user.")
+
     with st.expander("Delete User"):
         del_user = st.selectbox("Select User", users['username'])
         if st.button("Delete Selected"):
             db.delete_user_by_username(del_user)
             st.success("Deleted.")
             st.rerun()
+
 
 def admin_ledger_section():
     st.subheader("📖 Item Ledger & History")
@@ -1088,24 +1129,24 @@ def add_filters(df, key_suffix='main'):
     
 def show_parts_table(user_types, advisor_code, is_admin):
     # Determine base view
-    view_all_roles = ['A', 'AA', 'PRTADV', 'SADV']
+    view_all_roles = ['A', 'Read Only', 'PRTADV', 'SADV']
     
     if is_admin:
         df = db.get_parts_view('admin')
-    elif 'AA' in user_types:
-        df = db.get_parts_view('AA')
+    elif 'Read Only' in user_types:
+        df = db.get_parts_view('Read Only')
     elif any(role in user_types for role in view_all_roles):
          # View all active
          df = db.get_parts_view('A') # 'A' triggers View All in DB
-    elif 'EMB' in user_types:
+    elif 'SaMnagment' in user_types:
           # Group View
-          df = db.get_parts_view('EMB')
+          df = db.get_parts_view('SaMnagment')
     elif 'OTC' in user_types:
           # OTC View (Restricted)
           df = db.get_parts_view('OTC')
     else:
-        # Default / Type B
-        df = db.get_parts_view('B', advisor_code)
+        # Default / Type ServiceADV
+        df = db.get_parts_view('ServiceADV', advisor_code)
     
     if df.empty:
         st.info("No records found.")

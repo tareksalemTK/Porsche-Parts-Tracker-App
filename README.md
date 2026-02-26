@@ -172,10 +172,10 @@ http://<SERVER_IP>:8501
 | `admin` | Everything | ✅ | ❌ |
 | `PRTADV` | All advisors except OTC | ✅ | ❌ |
 | `A` | All advisors except OTC | ❌ | ❌ |
-| `AA` | All advisors (view only) | ❌ | ❌ |
-| `EMB` | EMA, EMB, EMC groups only | ❌ | ❌ |
+| `Read Only` | All advisors (view only) | ❌ | ❌ |
+| `SaMnagment` | EMA, EMB, EMC groups only | ❌ | ❌ |
 | `OTC` | OTC parts only | ✅ | ❌ |
-| `B` | Own advisor code only | ❌ | ❌ |
+| `ServiceADV` | Own advisor code only | ❌ | ❌ |
 
 > Users can hold **multiple roles** simultaneously (stored as comma-separated values, e.g. `admin,super_admin`).
 

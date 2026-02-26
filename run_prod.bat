@@ -27,5 +27,5 @@ if not exist venv (
 call venv\Scripts\activate
 
 :: Run the application
-python -m streamlit run app/main.py --server.port 8501
+python -m streamlit run app/main.py --server.port 8501 --server.address 0.0.0.0
 pause

@@ -222,6 +222,35 @@ def init_db():
     except Exception as e:
         print(f"Migration error (SADV->PRTADV): {e}")
 
+    # 3. Robust Update User Roles - Migration AA -> Read Only, EMB -> SaMnagment, B -> ServiceADV
+    try:
+        c.execute("SELECT id, user_type FROM users WHERE user_type LIKE '%AA%' OR user_type LIKE '%EMB%' OR user_type LIKE '%B%'")
+        users_to_update = c.fetchall()
+        
+        for user_id, u_types_str in users_to_update:
+            if not u_types_str:
+                continue
+            
+            types_list = [t.strip() for t in u_types_str.split(',')]
+            modified = False
+            
+            for i, role in enumerate(types_list):
+                if role == 'AA':
+                    types_list[i] = 'Read Only'
+                    modified = True
+                elif role == 'EMB':
+                    types_list[i] = 'SaMnagment'
+                    modified = True
+                elif role == 'B':
+                    types_list[i] = 'ServiceADV'
+                    modified = True
+            
+            if modified:
+                new_type_str = ','.join(types_list)
+                c.execute("UPDATE users SET user_type = ? WHERE id = ?", (new_type_str, user_id))
+    except Exception as e:
+        print(f"Migration error (AA/EMB/B): {e}")
+
     conn.commit()
     conn.close()
 
@@ -284,6 +313,41 @@ def delete_user_by_username(username):
     c.execute('DELETE FROM users WHERE username = ?', (username,))
     conn.commit()
     conn.close()
+
+def update_user(username, user_type, service_advisor_code, email, new_password=None):
+    """
+    Updates a user's type, advisor code, email, and optionally their password.
+    Password is only changed if new_password is provided (non-empty).
+    """
+    conn = get_connection()
+    c = conn.cursor()
+
+    # Ensure user_type is stored as comma-separated string
+    if isinstance(user_type, list):
+        user_type = ",".join(user_type)
+
+    try:
+        if new_password:
+            salt = bcrypt.gensalt()
+            hashed = bcrypt.hashpw(new_password.encode('utf-8'), salt)
+            c.execute('''
+                UPDATE users
+                SET user_type = ?, service_advisor_code = ?, email = ?, password_hash = ?
+                WHERE username = ?
+            ''', (user_type, service_advisor_code, email, hashed, username))
+        else:
+            c.execute('''
+                UPDATE users
+                SET user_type = ?, service_advisor_code = ?, email = ?
+                WHERE username = ?
+            ''', (user_type, service_advisor_code, email, username))
+        conn.commit()
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"Error updating user: {e}")
+        conn.close()
+        return False
 
 def get_user_emails_by_advisor_code(advisor_code):
     """
@@ -563,16 +627,16 @@ def get_parts_view(user_type, service_advisor_code=None):
     # Role Logic
     # View All Types
     # Role Logic
-    # 1. Admin or AA: View Everything
-    if user_type in ['admin', 'AA']:
+    # 1. Admin or Read Only: View Everything
+    if user_type in ['admin', 'Read Only']:
         pass
         
     # 2. General View (A, PRTADV): View All EXCEPT OTC
     elif user_type in ['A', 'PRTADV', 'SADV']: # SADV for safety
         base_query += " AND p.service_advisor != 'OTC'"
         
-    # Group View: EMB Role
-    elif user_type == 'EMB':
+    # Group View: SaMnagment Role
+    elif user_type == 'SaMnagment':
         base_query += " AND p.service_advisor IN ('EMA GilbetZ', 'EMB TonyR', 'EMC JackS')"
         
     # Restricted View: OTC
@@ -1257,11 +1321,11 @@ def get_item_details(item_no_query, user_type='admin', service_advisor_code=None
     if not user_type: user_type = ''
     roles = [r.strip() for r in user_type.split(',')]
     
-    if 'admin' in roles or 'super_admin' in roles or 'AA' in roles:
+    if 'admin' in roles or 'super_admin' in roles or 'Read Only' in roles:
         pass # View All
     elif 'A' in roles or 'PRTADV' in roles or 'SADV' in roles:
         query += " AND service_advisor != 'OTC'"
-    elif 'EMB' in roles:
+    elif 'SaMnagment' in roles:
         query += " AND service_advisor IN ('EMA GilbetZ', 'EMB TonyR', 'EMC JackS')"
     elif 'OTC' in roles:
         query += " AND service_advisor = 'OTC'"
