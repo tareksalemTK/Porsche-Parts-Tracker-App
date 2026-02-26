@@ -1,9 +1,8 @@
 @echo off
-:: Production Environment Setup
+:: Execution Wrapper for Morning Brief Scheduler
 set APP_ENV=prod
 
 :: Email Configuration (SMTP)
-:: Set these environment variables or configure them in your server environment
 set EMAIL_BACKEND=smtp
 
 :: --- SMTP SETTINGS ---
@@ -13,19 +12,16 @@ set SENDER_EMAIL=tmaher@porscheleb.com
 set SENDER_PASSWORD=tottlf00722
 :: -------------------------------------------------------------
 
-echo Starting Porsche Parts Tracker (Production Mode)...
+echo Executing Morning Brief Script...
 
 :: Check if venv exists
 if not exist venv (
     echo [ERROR] Virtual environment 'venv' not found.
-    echo [i] Please run 'setup.bat' first to create the environment and install Python.
-    pause
     exit /b 1
 )
 
 :: Activate venv
 call venv\Scripts\activate
 
-:: Run the application
-python -m streamlit run app/main.py --server.port 8501 --server.address 0.0.0.0
-pause
+:: Run the morning brief script
+python app/run_brief.py
