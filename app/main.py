@@ -668,14 +668,16 @@ def admin_user_management():
             u_code = st.selectbox("Service Advisor Code (for Type ServiceADV)", ["EMA GilbetZ", "EMB TonyR", "EMC JackS", "B&P", "OTC", "ALL", "None"], index=6)
             
             if st.form_submit_button("Create User"):
-                if 'ServiceADV' in u_types and u_code == 'None':
+                if not u_name.strip():
+                    st.error("Username cannot be blank.")
+                elif 'ServiceADV' in u_types and u_code == 'None':
                     st.error("Type ServiceADV must have an Advisor Code.")
                 else:
                     # u_types passed as list to db.create_user (which now handles it)
                     if db.create_user(u_name, u_pass, u_types, u_code, u_email):
                         st.success(f"User {u_name} created.")
                     else:
-                        st.error("Error creating user.")
+                        st.error("Error creating user. Username may already exist.")
 
     # List & Delete
     users = db.get_all_users()
