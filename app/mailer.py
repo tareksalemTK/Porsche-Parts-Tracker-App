@@ -207,7 +207,7 @@ def send_bulk_notification(advisor_email, items, title="Parts Notification", adv
     <head>
     <style>
         body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #ffffff; margin: 0; padding: 0; }}
-        .email-container {{ max-width: 900px; margin: 20px auto; background-color: #ffffff; padding: 20px; }}
+        .email-container {{ width: 100%; max-width: 1200px; margin: 20px auto; background-color: #ffffff; padding: 15px; box-sizing: border-box; }}
         
         /* Header: White Background, Centered Logo */
         .header {{ padding: 20px 0; text-align: center; border-bottom: 2px solid #eeeeee; }}
@@ -219,12 +219,12 @@ def send_bulk_notification(advisor_email, items, title="Parts Notification", adv
         p {{ color: #333333; line-height: 1.6; font-size: 15px; }}
         
         /* Table Styling */
-        .content-table {{ border-collapse: collapse; margin: 25px 0; font-size: 0.9em; min-width: 100%; width: 100%; border: 1px solid #e0e0e0; }}
+        .content-table {{ border-collapse: collapse; margin: 20px 0; font-size: 13px; min-width: 100%; width: 100%; border: 1px solid #e0e0e0; }}
         
         /* Header: GREY Background */
         .content-table thead tr {{ background-color: #555555; color: #ffffff; text-align: left; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }}
         
-        .content-table th, .content-table td {{ padding: 12px 15px; border-bottom: 1px solid #e0e0e0; }}
+        .content-table th, .content-table td {{ padding: 8px 6px; border-bottom: 1px solid #e0e0e0; white-space: nowrap; }}
         .content-table tbody tr:nth-of-type(even) {{ background-color: #f8f8f8; }}
         
         /* Column Lines (Vertical Borders) */
@@ -316,7 +316,7 @@ def send_stale_stock_warning(advisor_email, items, advisor_name=None):
     <head>
     <style>
         body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #ffffff; margin: 0; padding: 0; }}
-        .email-container {{ max-width: 900px; margin: 20px auto; background-color: #ffffff; padding: 20px; border-top: 5px solid #d32f2f; }} /* Red Top Border for Warning */
+        .email-container {{ width: 100%; max-width: 1200px; margin: 20px auto; background-color: #ffffff; padding: 15px; border-top: 5px solid #d32f2f; box-sizing: border-box; }} /* Red Top Border for Warning */
         
         .header {{ padding: 20px 0; text-align: center; border-bottom: 2px solid #eeeeee; }}
         .content {{ padding: 30px 0; }}
@@ -325,9 +325,9 @@ def send_stale_stock_warning(advisor_email, items, advisor_name=None):
         h2 {{ color: #d32f2f; margin-top: 0; font-weight: 600; }} /* Red Header */
         p {{ color: #333333; line-height: 1.6; font-size: 15px; }}
         
-        .content-table {{ border-collapse: collapse; margin: 25px 0; font-size: 0.9em; min-width: 100%; width: 100%; border: 1px solid #e0e0e0; }}
+        .content-table {{ border-collapse: collapse; margin: 20px 0; font-size: 13px; min-width: 100%; width: 100%; border: 1px solid #e0e0e0; }}
         .content-table thead tr {{ background-color: #d32f2f; color: #ffffff; text-align: left; font-weight: 600; text-transform: uppercase; }}
-        .content-table th, .content-table td {{ padding: 12px 15px; border-bottom: 1px solid #e0e0e0; }}
+        .content-table th, .content-table td {{ padding: 8px 6px; border-bottom: 1px solid #e0e0e0; white-space: nowrap; }}
         .content-table tbody tr:nth-of-type(even) {{ background-color: #f8f8f8; }}
         
     </style>

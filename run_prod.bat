@@ -7,10 +7,10 @@ set APP_ENV=prod
 set EMAIL_BACKEND=smtp
 
 :: --- SMTP SETTINGS ---
-set SMTP_SERVER=smtp.office365.com
+set SMTP_SERVER=smtp.gmail.com
 set SMTP_PORT=587
-set SENDER_EMAIL=tmaher@porscheleb.com
-set SENDER_PASSWORD=tottlf00722
+set SENDER_EMAIL=porsche.tracker.app@gmail.com
+set SENDER_PASSWORD=rmkljmigockhnujw
 :: -------------------------------------------------------------
 
 echo Starting Porsche Parts Tracker (Production Mode)...

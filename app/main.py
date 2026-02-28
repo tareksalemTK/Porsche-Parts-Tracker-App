@@ -12,6 +12,120 @@ from datetime import datetime
 # --- Config ---
 st.set_page_config(page_title="PCL Parts Reservation Tracker", layout="wide")
 
+# --- Premium Porsche UI Styling ---
+def apply_premium_styles():
+    st.markdown("""
+    <style>
+        /* Modern Apple/Porsche Typography & Spacing */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        .stApp {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f7f7f9;
+        }
+        
+        /* Premium Card style for tabs and main containers */
+        div[data-testid="stVerticalBlock"] > div[style*="flex-direction: column;"] > div[data-testid="stVerticalBlock"] {
+            background-color: #ffffff;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+
+        /* Refined Primary Buttons matching Porsche Red */
+        .stButton button[kind="primary"] {
+            background-color: #D5001C !important;  /* True Porsche Red */
+            color: white !important;
+            border: none !important;
+            border-radius: 6px !important;
+            font-weight: 600 !important;
+            padding: 0.5rem 1.5rem !important;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+            box-shadow: 0 4px 6px rgba(213, 0, 28, 0.2) !important;
+        }
+        
+        .stButton button[kind="primary"]:hover {
+            background-color: #b00017 !important;
+            box-shadow: 0 6px 12px rgba(213, 0, 28, 0.3) !important;
+            transform: translateY(-1px) !important;
+        }
+        
+        /* Secondary Buttons */
+        .stButton button[kind="secondary"] {
+            background-color: #ffffff !important;
+            color: #333333 !important;
+            border: 1px solid #e0e0e0 !important;
+            border-radius: 6px !important;
+            font-weight: 500 !important;
+            transition: all 0.2s ease !important;
+        }
+        
+        .stButton button[kind="secondary"]:hover {
+            border-color: #D5001C !important;
+            color: #D5001C !important;
+        }
+
+        /* Sophisticated Dataframes/Tables */
+        div[data-testid="stDataFrame"] {
+            border-radius: 8px !important;
+            border: 1px solid #eaebec !important;
+            overflow: hidden !important;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02) !important;
+        }
+        
+        /* Headers & Typographic Scale */
+        h1, h2, h3 {
+            color: #1a1a1a !important;
+            font-weight: 600 !important;
+            letter-spacing: -0.01em !important;
+        }
+        
+        h1 { font-size: 2.2rem !important; margin-bottom: 1.5rem !important; }
+        h2 { font-size: 1.6rem !important; margin-bottom: 1rem !important; }
+        h3 { font-size: 1.2rem !important; font-weight: 500 !important; text-transform: uppercase; letter-spacing: 0.05em !important; color: #666 !important; }
+
+        /* Sleek Status Alerts/Toasts */
+        .stAlert {
+            border-radius: 8px !important;
+            border-left-width: 4px !important;
+        }
+        
+        /* Minimalist text inputs */
+        .stTextInput input, .stSelectbox select {
+            border-radius: 6px !important;
+            border: 1px solid #e0e0e0 !important;
+            padding: 10px 14px !important;
+            background-color: #fbfbfb !important;
+            transition: border-color 0.2s ease !important;
+        }
+        
+        .stTextInput input:focus, .stSelectbox select:focus {
+            border-color: #D5001C !important;
+            box-shadow: 0 0 0 1px #D5001C !important;
+        }
+        
+        /* Tabs Underline Style */
+        .stTabs [data-baseweb="tab-list"] {
+            gap: 2rem;
+        }
+        
+        .stTabs [data-baseweb="tab"] {
+            height: 3rem;
+            white-space: nowrap;
+            background-color: transparent !important;
+        }
+        
+        .stTabs [aria-selected="true"] {
+            color: #D5001C !important;
+            border-bottom-color: #D5001C !important;
+            border-bottom-width: 3px !important;
+        }
+    </style>
+    """, unsafe_allow_html=True)
+
+apply_premium_styles()
+
 # --- Database Init ---
 db.init_db()
 
@@ -61,7 +175,7 @@ def logout():
     st.rerun()
 
 # --- Notifications Component ---
-def render_notifications():
+def render_notifications(as_popover=False, key_suffix=""):
     # Get unread
     notifs = db.get_notifications_for_user(
         None, # User ID not strictly tracked in session yet beyond username
@@ -72,12 +186,11 @@ def render_notifications():
     count = len(notifs)
     label = f"🔔 Notifications ({count})" if count > 0 else "🔔 Notifications"
 
-    # Render as an expander in the main area (or could be a popover in newer Streamlit)
-    with st.expander(label, expanded=False):
+    def _content():
         if not notifs:
             st.caption("No new notifications.")
         else:
-            if st.button("Clear All", key="clear_all_notifs"):
+            if st.button("Clear All", key=f"clear_all_notifs_{key_suffix}"):
                 db.mark_all_notifications_read()
                 st.rerun()
 
@@ -86,9 +199,17 @@ def render_notifications():
                 with col_a:
                     st.info(f"[{n['created_at'][:16]}] {n['message']}")
                 with col_b:
-                    if st.button("❌", key=f"notif_{n['id']}", help="Dismiss"):
+                    if st.button("❌", key=f"notif_{n['id']}_{key_suffix}", help="Dismiss"):
                         db.mark_notification_read(n['id'])
                         st.rerun()
+
+    # Render as popover or expander
+    if as_popover and hasattr(st, 'popover'):
+        with st.popover(label, use_container_width=True):
+            _content()
+    else:
+        with st.expander(label, expanded=False):
+            _content()
 
 # --- Admin Components ---
 def admin_upload_section():
@@ -234,8 +355,11 @@ def admin_upload_section():
         st.info("Upload 'On Order' File. Select the target Service Advisor.")
         up_file = st.file_uploader("Choose Excel File", type=['xlsx'], key='on_order_up')
         advisor = st.selectbox("Assign to Service Advisor", ["EMA GilbetZ", "EMB TonyR", "EMC JackS", "B&P", "OTC"])
+        status_placeholder = st.empty()
+        
         if st.button("Process On Order"):
             if up_file:
+                status_placeholder.markdown("<p style='color: red; font-weight: bold;'>Processing 'On Order' upload... Please wait (Do not double-click).</p>", unsafe_allow_html=True)
                 start_t = time.time()
                 data = utils.parse_on_order(up_file, advisor)
                 count = 0
@@ -258,6 +382,7 @@ def admin_upload_section():
                 
                 # System Notification
                 db.add_notification(f"New 'On Order' file uploaded for {advisor} ({count} items).", target_advisor_code=advisor)
+                status_placeholder.empty()
                 st.success(f"Processed {count} records in {time.time()-start_t:.2f}s")
                 time.sleep(1)
                 st.rerun()
@@ -273,8 +398,11 @@ def admin_upload_section():
         st.caption("📅 Specify when these items went on back order (defaults to today):")
         back_order_date = st.date_input("Back Order Start Date", value=datetime.now().date(), key='bo_date')
         
+        bo_status_placeholder = st.empty()
+        
         if st.button("Process Back Order"):
             if up_file_bo:
+                bo_status_placeholder.markdown("<p style='color: red; font-weight: bold;'>Processing 'Back Order' upload... Please wait (Do not double-click).</p>", unsafe_allow_html=True)
                 data = utils.parse_back_order(up_file_bo)
                 count = 0
                 
@@ -308,6 +436,7 @@ def admin_upload_section():
                 
                 # Notification
                 db.add_notification(f"New 'Back Order' file uploaded ({count} items).")
+                bo_status_placeholder.empty()
                 st.success(f"Processed {count} records and triggered email notifications.")
                 
                 # Display Results Table
@@ -365,8 +494,11 @@ def admin_upload_section():
             up_file_inv = st.file_uploader("Choose Excel File", type=['xlsx'], key='invoiced_up')
             manual_eta = st.date_input("Set ETA for this Shipment").strftime('%Y-%m-%d')
             
+            ship_status_placeholder = st.empty()
+            
             if st.button("Process Shipment Notification"):
                 if up_file_inv:
+                    ship_status_placeholder.markdown("<p style='color: red; font-weight: bold;'>Processing Shipment... Please wait (Do not double-click).</p>", unsafe_allow_html=True)
                     # Pass context: Shipment Name
                     shipment_name = up_file_inv.name
                     data = utils.parse_invoiced(up_file_inv, manual_eta)
@@ -395,6 +527,7 @@ def admin_upload_section():
                             mailer.send_bulk_notification(email, items, title=f"Shipment {shipment_name} - In Transit", advisor_name=username)
                         
                     db.add_notification(f"New Shipment '{shipment_name}' In Transit ({count} items).")
+                    ship_status_placeholder.empty()
                     st.success(f"Processed {count} records. Items are now 'In Transit'. Go to 'Review & Receive' when they arrive.")
                     time.sleep(2)
                     st.rerun()
@@ -867,8 +1000,8 @@ def admin_ledger_section():
                          "Document No": st.column_config.TextColumn("Doc No", width="small"),
                          "Advisor": st.column_config.TextColumn("Advisor", width="small"),
                          "Posted By": st.column_config.TextColumn("Posted By", width="small"),
-                         "Posted Date": st.column_config.DatetimeColumn("Posted Date", format="D MMM YYYY, HH:mm"),
-                         "Back Order Date": st.column_config.DateColumn("Back Order Date", format="D MMM YYYY"),
+                         "Posted Date": st.column_config.TextColumn("Posted Date", width="medium"),
+                         "Back Order Date": st.column_config.TextColumn("Back Order Date", width="medium"),
                          "VIN": st.column_config.TextColumn("VIN", width="medium"),
                          "Ordered Qty": st.column_config.NumberColumn("Ord Qty", width="small"),
                          "Received Qty": st.column_config.NumberColumn("Rec Qty", width="small"),
@@ -931,9 +1064,6 @@ def main_dashboard():
     # 1. Top Bar
     render_header()
     
-    # 2. Notifications check
-    render_notifications()
-
     u_type_str = st.session_state.get('user_type', '')
     u_types = u_type_str.split(',') if u_type_str else []
     
@@ -999,7 +1129,7 @@ def main_dashboard():
             
             if not archived_df.empty:
                 # Add Filters
-                archived_df = add_filters(archived_df, key_suffix='archived')
+                archived_df = add_toolbar(archived_df, key_suffix='archived')
                 
                 if archived_df.empty:
                     st.info("No items match filter.")
@@ -1070,67 +1200,80 @@ def main_dashboard():
         with tab2:
             admin_ledger_section()
 
-def add_filters(df, key_suffix='main'):
+def add_toolbar(df, export_df=None, key_suffix='main'):
     """
-    Adds a dynamic filter section: Allows filtering by multiple columns suitable for "header-like" filtering.
+    Renders a unified horizontal toolbar with Filter, Clear, Export, and Notifications.
     Returns the filtered dataframe.
     """
     if df.empty:
         return df
 
+    filtered_df = df.copy()
     
-    # Layout: Expander for Filter + Button to Clear next to it
-    c_filt, c_clear = st.columns([6, 1], vertical_alignment="bottom")
+    # Layout: 4 equal columns
+    t1, t2, t3, t4 = st.columns(4, vertical_alignment="bottom")
     
-    with c_clear:
-        # Pushed down to align with the collapsed expander visually or just float right
+    with t1:
+        if hasattr(st, 'popover'):
+            with st.popover("🔍 Filter Data", use_container_width=True):
+                all_cols = list(df.columns)
+                cols_to_filter = st.multiselect("Select Columns to Filter", all_cols, placeholder="Choose columns...")
+                
+                if cols_to_filter:
+                    for col_name in cols_to_filter:
+                        val = st.text_input(f"Filter {col_name}", key=f"filt_{col_name}_{key_suffix}")
+                        if val:
+                            filtered_df = filtered_df[filtered_df[col_name].astype(str).str.contains(val, case=False, na=False)]
+                
+                st.caption(f"Showing {len(filtered_df)} of {len(df)} rows")
+                
+                if st.checkbox("✅ Select All Filtered Rows", value=False, key=f"filter_select_all_{key_suffix}"):
+                    st.session_state[f'select_all_filtered_{key_suffix}'] = True
+                else:
+                    st.session_state[f'select_all_filtered_{key_suffix}'] = False
+        else:
+            with st.expander("🔍 Filter Data"):
+                st.warning("Streamlit is outdated. Popover not supported.")
+
+    with t2:
         if st.button("🧹 Clear Filters", use_container_width=True, key=f"clear_filt_btn_{key_suffix}"):
              for key in list(st.session_state.keys()):
                  if key.startswith("filt_"):
                      del st.session_state[key]
              st.rerun()
 
-    with c_filt:
-        with st.expander("🔍 Filter Data", expanded=False):
-            # 1. Select Columns to Filter
-            all_cols = list(df.columns)
-            # Exclude internal cols roughly? Or allow all? User said "every header".
-            # Let's filter out 'id', 'Select' if present?
-            # But maybe they search by ID. Let's keep all except strictly internal logic ones if any.
-            
-            cols_to_filter = st.multiselect("Select Columns to Filter", all_cols, placeholder="Choose columns...")
-            
-            filtered_df = df.copy()
-            
-            if cols_to_filter:
-                # Create a dynamic grid
-                # If many checks, maybe 3 or 4 per row
-                cols = st.columns(len(cols_to_filter)) if len(cols_to_filter) < 4 else st.columns(4)
-                
-                for i, col_name in enumerate(cols_to_filter):
-                    # Simple logic: If numeric, show number range? If text, text input? 
-                    # For simplicity/speed: Text Input for pattern matching default
-                    col = cols[i % 4]
-                    
-                    with col:
-                        # Check type
-                        # if pd.api.types.is_numeric_dtype(df[col_name]): ...
-                        # For now, simple string contains is most robust for mixed data
-                        val = st.text_input(f"Filter {col_name}", key=f"filt_{col_name}")
-                        if val:
-                            filtered_df = filtered_df[filtered_df[col_name].astype(str).str.contains(val, case=False, na=False)]
-            
-            st.caption(f"Showing {len(filtered_df)} of {len(df)} rows")
-            
-            # Bulk Select Option (Moved inside Filter)
-            if st.checkbox("✅ Select All Filtered Rows", value=False, key=f"filter_select_all_{key_suffix}", help="Selects all currently filtered rows for bulk actions."):
-                st.session_state[f'select_all_filtered_{key_suffix}'] = True
-            else:
-                st.session_state[f'select_all_filtered_{key_suffix}'] = False
-            
-            return filtered_df
-            
-    return df
+    with t3:
+        if export_df is not None:
+             col_map = {
+                 "item_no": "Item No", "item_description": "Description", "customer_name": "Customer Name",
+                 "vin": "VIN", "document_no": "Document No", "service_advisor": "Service Advisor",
+                 "order_no": "Order No", "item_status": "Status", "eta": "ETA", "next_info": "Next Info from PAG",
+                 "ordered_qty": "Ordered Qty", "in_transit_qty": "In Transit Qty", "received_qty": "Received Qty",
+                 "days_in_stock": "Duration", "cardown": "Car Down", "latest_remark": "Latest Remark"
+             }
+             cols_to_export = [c for c in col_map.keys() if c in export_df.columns]
+             export_df_final = export_df[cols_to_export].rename(columns=col_map)
+             if "Item No" in export_df_final.columns:
+                 export_df_final["Item No"] = export_df_final["Item No"].astype(str)
+                 
+             buffer = io.BytesIO()
+             with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
+                 export_df_final.to_excel(writer, index=False, sheet_name='Sheet1')
+                 
+             st.download_button(
+                 label="📥 Export to Excel",
+                 data=buffer.getvalue(),
+                 file_name=f"parts_export_{pd.Timestamp.now().strftime('%Y%m%d_%H%M')}.xlsx",
+                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                 use_container_width=True
+             )
+        else:
+             st.button("📥 Export to Excel", disabled=True, use_container_width=True)
+
+    with t4:
+        render_notifications(as_popover=True, key_suffix=key_suffix)
+
+    return filtered_df
     
 def show_parts_table(user_types, advisor_code, is_admin):
     # Determine base view
@@ -1187,8 +1330,8 @@ def show_parts_table(user_types, advisor_code, is_admin):
     # 2. Capture Full DataFrame for Export (Before UI Filters)
     full_export_df = df.copy()
 
-    # 3. Apply UI Filters (Top Bar Style) -> Re-enabled!
-    df = add_filters(df, key_suffix='parts_main')
+    # 3. Apply Toolbar & Filtering
+    df = add_toolbar(df, export_df=full_export_df, key_suffix='parts_main')
     
     if df.empty:
         st.info("No records match your search.")
@@ -1225,59 +1368,7 @@ def render_table_actions(df, user_types, is_admin, export_df=None):
     # Permission Check
     can_post = 'B1' in user_types or is_admin
 
-    # --- Export Button ---
-    col_export, col_dummy = st.columns([1, 5])
-    with col_export:
-        # Prepare Export Data
-        # Use unfiltered export_df if provided, else fall back to display df
-        data_to_export = export_df if export_df is not None else df
-        export_df_final = data_to_export.copy()
-        
-        # 1. Filter & Rename Columns to match UI
-        # Map DB columns to Nice Names
-        col_map = {
-            "item_no": "Item No",
-            "item_description": "Description",
-            "customer_name": "Customer Name",
-            "vin": "VIN",
-            "document_no": "Document No",
-            "service_advisor": "Service Advisor",
-            "order_no": "Order No",
-            "item_status": "Status",
-            "eta": "ETA",
-            "next_info": "Next Info from PAG",
-            "ordered_qty": "Ordered Qty",
-            "in_transit_qty": "In Transit Qty",
-            "received_qty": "Received Qty",
-            "days_in_stock": "Duration",
-            "cardown": "Car Down",
-            "latest_remark": "Latest Remark"
-        }
-        
-        # Filter only existing columns
-        cols_to_export = [c for c in col_map.keys() if c in export_df_final.columns]
-        export_df_final = export_df_final[cols_to_export]
-        export_df_final = export_df_final.rename(columns=col_map)
-        
-        # 2. Text Format Enforcement for Item No
-        # Pandas to_excel naturally handles strings, but Excel might auto-convert.
-        # We can't easily force cell format without extensive openpyxl work, 
-        # BUT standard pattern is writing as string.
-        if "Item No" in export_df_final.columns:
-            export_df_final["Item No"] = export_df_final["Item No"].astype(str)
-        
-        # 3. Generate Excel in Memory
-        buffer = io.BytesIO()
-        with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
-            export_df_final.to_excel(writer, index=False, sheet_name='Sheet1')
-            
-        st.download_button(
-            label="📥 Export to Excel",
-            data=buffer.getvalue(),
-            file_name=f"parts_export_{pd.Timestamp.now().strftime('%Y%m%d_%H%M')}.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
-
+    # --- Tools Have Been Moved to Top Toolbar ---
 
     # --- Days in Stock Calculation & Remarks Formatting ---
     # Moved to show_parts_table to ensure availability for export and correct separation of concerns.
@@ -1350,7 +1441,6 @@ def render_table_actions(df, user_types, is_admin, export_df=None):
         selection_mode="multi-row",
         key=f"main_parts_table_{len(df)}"
     )
-    
     
     # Get selected row indices from dataframe selection
     if use_all_filtered:
